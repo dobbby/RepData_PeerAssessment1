@@ -1,25 +1,130 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+Peer assignment #1
+========================================================
+
+This markdown was created as a exercise for the peer assignment 1 of the course Reproducible 
+Research on Coursera.
+
+17.1.2015
+Author: Alena D.
+
+### Loading and preprocessing the data
+
+Datasets for this assignment contain personal activity information during 2 months in the 5 minutes 
+intervals. The variables included in dataset are:
+- steps: Number of steps taking in a 5-minute interval (missing values are coded as NA)
+- date: The date on which the measurement was taken in YYYY-MM-DD format
+- interval: Identifier for the 5-minute interval in which measurement was taken
 
 
-## Loading and preprocessing the data
+#### Loading:
+```{r}
+data <- read.csv("d:/online_kurzy/Coursera/reproducible_research/peerass1/activity.csv")
+```
+
+
+#### Structure of uploaded data:
+```{r}
+str(data)
+```
+
+The proccessing steps are included in parts answering quenstions from assignment.
+
+
+### What is mean total number of steps taken per day?
+
+#### Processing data
+```{r}
+totStepsDays <- aggregate(steps ~ date,data,FUN=sum)
+```
+
+#### Histogram of total number of steps taken each day
+```{r}
+hist(totStepsDays$steps, main="Histogram of total number of steps per day", 
+     xlab="# of steps per day")
+```
+
+#### Mean of total number of steps taken each day
+```{r}
+mean(totStepsDays$steps)
+```
+The mean number of steps per day is 10766.
+
+#### Median of total number of steps taken each day
+```{r}
+median(totStepsDays$steps)
+```
+The median number of steps per day is 10765.
 
 
 
-## What is mean total number of steps taken per day?
+### What is the average daily activity pattern?
+
+#### Processing data
+```{r}
+actPattern <- aggregate(steps ~ as.factor(data$interval),data,FUN=mean)
+names(actPattern) <- c("int", "steps")
+actPattern$int <- as.numeric(as.character(actPattern$int))
+```
+
+#### Time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+```{r}
+library(ggplot2)
+ggplot(data=actPattern, aes(x=int, y=steps)) + geom_line() + xlab("Minutes") + 
+  ylab("Average number of steps accross all days") + theme_bw() +
+  ggtitle("Average number of steps accross all days in every 5 minute interval")
+
+```
+
+### Imputing missing values
+
+#### Number of missing values
+```{r}
+nrow(data[is.na(data)[,1],])
+```
+In primary data there are 2304 rows which contain NA value.
+
+#### Strategy for filling in all of the missing values in the dataset and new dataset without missing values
+```{r}
+datawithoutNA <- data
+datawithoutNA[is.na(datawithoutNA)[,1],1] <- actPattern[actPattern$int == datawithoutNA[is.na(datawithoutNA)[,1],3],2]
+```
+I selected a method for filling in NA values in using mean for that 5 minute interval.
+
+#### Consequences of data manipulation
+```{r}
+totStepsDays <- aggregate(steps ~ date, datawithoutNA, FUN=sum)
+hist(totStepsDays$steps, main="Histogram of total number of steps per day", 
+     xlab="# of steps per day")
+mean(totStepsDays$steps)
+median(totStepsDays$steps)
+```
+
+The mean and median of total steps per day are equal after the data manipulation. Median was 10765 before.
+
+### Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+data <- cbind(data, c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", 
+  "Friday", "Saturday")[as.POSIXlt(data$date)$wday + 1])
+data[,4] <- as.character(data[,4])
+data[-grep("S", data[,4]),4] <- "weekday"
+data[grep("S", data[,4]),4] <- "weekend"
+data[,4] <- as.factor(data[,4])
+str(data)
+```
+
+#### The 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)
+```{r}
+actPattern <- aggregate(steps ~ as.factor(data$interval) + data[,4],data,FUN=mean)
+names(actPattern) <- c("int", "dayw", "steps")
+actPattern$int <- as.numeric(as.character(actPattern$int))
+
+ggplot(data=actPattern, aes(x=int, y=steps)) + geom_line() + xlab("Minutes") + 
+  ylab("Average number of steps accross all days") + theme_bw() +
+  ggtitle("Average number of steps accross all days in every 5 minute interval") + facet_grid(dayw ~ .)
+```
 
 
 
-## What is the average daily activity pattern?
 
 
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
